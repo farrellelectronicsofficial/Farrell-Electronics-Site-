@@ -76,6 +76,17 @@
               <option value="dead">Won't Turn On</option>
             </select>
           </div>
+
+          <div>
+            <label for="carrier">Carrier</label>
+            <select id="carrier" disabled>
+              <option value="unlocked">Unlocked</option>
+              <option value="att">AT&T</option>
+              <option value="verizon">Verizon</option>
+              <option value="tmobile">T-Mobile</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
         </div>
 
         <div class="result" id="resultArea">
@@ -130,6 +141,10 @@
       // Condition multipliers: Like New and Fair added. Cracked stays 0.5.
       // Note: 'dead' (not working) handled specially below to return fixed offers.
       const CONDITION_MULT = { like_new: 1.1, good: 1.0, fair: 0.9, cracked: 0.5 };
+
+      // Carrier multipliers applied after condition multiplier
+      // AT&T/Verizon/T-Mobile: 0.9, Other: 0.8, Unlocked: 1.0
+      const CARRIER_MULT = { unlocked: 1.0, att: 0.9, verizon: 0.9, tmobile: 0.9, other: 0.8 };
 
       // Model lists. Base values: numeric when fixed ($50 or $5) or null => $PLACEHOLDER for you to edit.
       const SAMSUNG_MODELS = [
@@ -231,6 +246,7 @@
       const modelEl = document.getElementById('model');
       const storageEl = document.getElementById('storage');
       const conditionEl = document.getElementById('condition');
+      const carrierEl = document.getElementById('carrier');
       const offerEl = document.getElementById('offer');
       const offerNoteEl = document.getElementById('offerNote');
       const contactTop = document.getElementById('contactTop');
@@ -257,6 +273,7 @@
         const modelName = modelEl.value || (modelEl.options[modelEl.selectedIndex] ? modelEl.options[modelEl.selectedIndex].text : '');
         const storage = storageEl.value ? (storageEl.options[storageEl.selectedIndex] ? storageEl.options[storageEl.selectedIndex].text : storageEl.value + 'GB') : '';
         const condition = conditionEl.options[conditionEl.selectedIndex] ? conditionEl.options[conditionEl.selectedIndex].text : '';
+        const carrier = carrierEl.options[carrierEl.selectedIndex] ? carrierEl.options[carrierEl.selectedIndex].text : (carrierEl.value || '');
         const price = offerEl.textContent || '';
         const note = offerNoteEl.textContent || '';
 
@@ -318,6 +335,7 @@
           info.appendChild(infoRow('Model', modelName));
           info.appendChild(infoRow('Storage', storage));
           info.appendChild(infoRow('Condition', condition));
+          info.appendChild(infoRow('Carrier', carrier));
           card.appendChild(info);
 
           const offerWrap = document.createElement('div');
@@ -364,6 +382,7 @@
       modelEl.setAttribute('disabled','disabled'); modelEl.style.pointerEvents='none';
       storageEl.setAttribute('disabled','disabled'); storageEl.style.pointerEvents='none';
       conditionEl.setAttribute('disabled','disabled'); conditionEl.style.pointerEvents='none';
+      carrierEl.setAttribute('disabled','disabled'); carrierEl.style.pointerEvents='none';
 
       function populateModels(list){
         modelEl.innerHTML = '';
@@ -398,6 +417,7 @@
         const modelName = modelEl.value;
         const storage = storageEl.value;
         const condition = conditionEl.value;
+        const carrier = carrierEl.value;
 
         contactBlock.style.display = 'none';
         modelHint.textContent = '';
@@ -507,6 +527,10 @@
         // Minimum $5 for any non-placeholder
         if(value < 5) value = 5;
 
+        // Apply carrier multiplier after condition
+        const cam = (CARRIER_MULT && CARRIER_MULT[carrier] !== undefined) ? CARRIER_MULT[carrier] : 1.0;
+        value = value * cam;
+
         offerEl.textContent = formatMoney(value);
         offerNoteEl.textContent = 'Price calculated based on model, storage and condition.';
 
@@ -523,6 +547,7 @@
         // disable dependent fields until model selected
         storageEl.disabled = true;
         conditionEl.disabled = true;
+        carrierEl.disabled = true;
 
         if(brand === 'samsung') {
           populateModels(SAMSUNG_MODELS);
@@ -548,9 +573,10 @@
           const combined = COMMON_ANDROID_MODELS.concat([{ name: 'Other Android (flat rate)', base: 5 }]);
           populateModels(combined);
           modelEl.removeAttribute('disabled'); modelEl.disabled = false; modelEl.style.pointerEvents='auto';
-          // keep storage/condition disabled until a specific model is chosen
+          // keep storage/condition/carrier disabled until a specific model is chosen
           storageEl.setAttribute('disabled','disabled'); storageEl.style.pointerEvents='none';
           conditionEl.setAttribute('disabled','disabled'); conditionEl.style.pointerEvents='none';
+          carrierEl.setAttribute('disabled','disabled'); carrierEl.style.pointerEvents='none';
         } else {
           modelEl.innerHTML = '';
           const empty = document.createElement('option'); empty.value = ''; empty.textContent = '-- Choose Model --'; modelEl.appendChild(empty);
@@ -571,14 +597,17 @@
           populateStorageOptions(storageOptions);
           storageEl.removeAttribute('disabled'); storageEl.disabled = false; storageEl.style.pointerEvents='auto';
           conditionEl.removeAttribute('disabled'); conditionEl.disabled = false; conditionEl.style.pointerEvents='auto';
+          carrierEl.removeAttribute('disabled'); carrierEl.disabled = false; carrierEl.style.pointerEvents='auto';
         } else {
           storageEl.setAttribute('disabled','disabled'); storageEl.disabled = true; storageEl.style.pointerEvents='none';
           conditionEl.setAttribute('disabled','disabled'); conditionEl.disabled = true; conditionEl.style.pointerEvents='none';
+          carrierEl.setAttribute('disabled','disabled'); carrierEl.disabled = true; carrierEl.style.pointerEvents='none';
         }
         update();
       });
       storageEl.addEventListener('change', update);
       conditionEl.addEventListener('change', update);
+      carrierEl.addEventListener('change', update);
 
       // Wire export button
       try{
