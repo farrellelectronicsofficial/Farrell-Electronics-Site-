@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Farrell Electronics — Trade-In Estimator</title>
+    <style>
+      :root{--bg:#f7fafc;--card:#fff;--accent:#0b69ff;--muted:#52606a}
+      body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:#06202a;margin:0}
+      .site{max-width:960px;margin:32px auto;padding:20px}
+      header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+      h1{font-size:20px;margin:0}
+      .btn{background:var(--accent);color:#fff;padding:10px 14px;border-radius:8px;border:none;cursor:pointer}
+      .card{background:var(--card);padding:18px;border-radius:12px;box-shadow:0 6px 18px rgba(8,23,42,0.06)}
+      select:disabled, button:disabled{opacity:0.6;cursor:not-allowed}
+      label{display:block;font-weight:600;margin-bottom:6px}
+      select,input[type=text]{width:100%;padding:10px;border:1px solid #e6eef6;border-radius:8px;margin-bottom:12px}
+      .grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));}
+      .result{margin-top:14px;padding:14px;border-radius:10px;background:#f1f7ff;border:1px solid #e6f0ff}
+      .muted{color:var(--muted);font-size:13px}
+      .contact-alert{margin-top:12px;padding:12px;border-radius:8px;background:#fff7ed;border:1px solid #ffe7c7}
+      .small{font-size:13px}
+      footer{margin-top:20px;color:var(--muted);font-size:13px}
+    </style>
+  </head>
+  <body>
+    <div class="site">
+      <header>
+        <div>
+          <h1>Farrell Electronics — Trade-In Estimator</h1>
+          <div class="muted small">Estimate trade-in offers for Samsung, iPhone, Google and Other Android</div>
+        </div>
+        <div>
+          <button class="btn" id="contactTop">Contact Us</button>
+        </div>
+      </header>
+
+      <main class="card">
+        <div class="grid">
+          <div>
+            <label for="brand">Brand</label>
+            <select id="brand">
+              <option value="">-- Choose Brand --</option>
+              <option value="samsung">Samsung</option>
+              <option value="apple">iPhone</option>
+              <option value="google">Google Pixel</option>
+              <option value="other">Other Android</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="model">Model</label>
+            <select id="model" disabled>
+              <option value="">-- Choose Model --</option>
+            </select>
+            <div id="modelHint" class="muted small"></div>
+          </div>
+
+          <div>
+            <label for="storage">Storage</label>
+            <select id="storage" disabled>
+              <option value="64">64GB</option>
+              <option value="128" selected>128GB</option>
+              <option value="256">256GB</option>
+              <option value="512">512GB+</option>
+            </select>
+          </div>
+
+          <div>
+            <label>Condition</label>
+            <select id="condition" disabled>
+              <option value="like_new">Like New</option>
+              <option value="good">Good</option>
+              <option value="fair">Fair</option>
+              <option value="cracked">Cracked Screen</option>
+              <option value="dead">Won't Turn On</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="result" id="resultArea">
+          <div class="muted">Estimated Offer</div>
+          <div style="font-size:28px;font-weight:700;margin-top:6px" id="offer">—</div>
+          <div class="muted small" id="offerNote"></div>
+          <div style="margin-top:10px">
+            <button class="btn" id="exportOffer">Export Offer (JPEG)</button>
+          </div>
+          <div id="tradeinNote" class="muted small" style="margin-top:8px">Send this offer to Farrell Electronics to confirm your trade in. Trade in only available with the purchase of a new device.</div>
+        </div>
+
+        <div id="contactBlock" style="display:none" class="contact-alert">
+          <div style="font-weight:700">Contact for a specific offer</div>
+          <div class="muted small" style="margin-top:6px">This model/brand has a standard $5 value but you may get a better offer — message us.</div>
+          <div style="margin-top:8px"><button class="btn" id="contactUnknown">Message us on Facebook</button></div>
+        </div>
+
+      </main>
+
+      <footer>
+       Phones may be resold or recycled, phones with user accounts upon arrival will be refused or value reduced. Offers may change with market values between estimate and trade-in. Devices with expanded batteries, severely bent frames or water damage will likely be refused. Contact our Facebook for more info.
+      </footer>
+    </div>
+
+    <script>
+      // Contact URL
+      const CONTACT_URL = 'https://www.facebook.com/marketplace/profile/61554953247457/';
+
+      // Storage multipliers. 128GB is baseline 1.0.
+      // 64GB: slightly less, 128GB: 1.0, 256GB: 1.1, 512GB+: 1.3
+      const STORAGE_MULT = { '64': 0.9, '128': 1.0, '256': 1.1, '512': 1.3, '1024': 1.3 };
+
+      // Default storage options to show when a model doesn't specify its own list
+      const DEFAULT_STORAGE_OPTIONS = ['64','128','256','512'];
+
+      // Populate storage select with an array of storage size strings (e.g. ['64','128'])
+      function populateStorageOptions(options){
+        storageEl.innerHTML = '';
+        options.forEach(sz => {
+          const o = document.createElement('option');
+          o.value = String(sz);
+          // present 512 as "512GB+" if it's the top-tier default marker
+          if(String(sz) === '512') o.textContent = '512GB+'; else o.textContent = String(sz) + 'GB';
+          storageEl.appendChild(o);
+        });
+        // prefer 128 if present
+        if(options.indexOf('128') !== -1) storageEl.value = '128';
+        else storageEl.selectedIndex = 0;
+      }
+
+      // Condition multipliers: Like New and Fair added. Cracked stays 0.5.
+      // Note: 'dead' (not working) handled specially below to return fixed offers.
+      const CONDITION_MULT = { like_new: 1.1, good: 1.0, fair: 0.9, cracked: 0.5 };
+
+      // Model lists. Base values: numeric when fixed ($50 or $5) or null => $PLACEHOLDER for you to edit.
+      const SAMSUNG_MODELS = [
+        { name: 'Galaxy S24 Ultra', base: 300 },
+        { name: 'Galaxy S24+', base: 215 },
+        { name: 'Galaxy S24', base: 200 },
+        { name: 'Galaxy S23 Ultra', base: 250 },
+        { name: 'Galaxy S23+', base: 235 },
+        { name: 'Galaxy S23', base: 175 },
+        { name: 'Galaxy S22 Ultra', base: 190 },
+        { name: 'Galaxy S22+', base: 160 },
+        { name: 'Galaxy S22', base: 130 },
+        { name: 'Galaxy S21 Series', base: 95 },
+        { name: 'Galaxy S20 FE', base: 50 },
+        { name: 'Galaxy S20 Series', base: 75 },
+        { name: 'Galaxy S10 Series', base: 50 },
+        // Older than S8 => automatic $5
+        { name: 'Galaxy S9 Series', base: 35 },
+        { name: 'Galaxy S8 Series', base: 15 },
+        { name: 'Galaxy Note 7', base: 'kaboom', note: 'Note 7 trade-ins are not accepted due to Kaboom? Yes rico, kaboom.' },
+        { name: 'Galaxy S7 Series', base: 5 },
+        { name: 'Galaxy S6 or Older', base: 5 },
+        { name: 'Galaxy Note 20', base: 175 },
+        { name: 'Galaxy Note 10', base: 95 },
+        { name: 'Galaxy Note 9', base: 50 },
+        { name: 'Galaxy Z Fold/Flip (Pre Z Flip3/Fold3)', base: 100, note: 'Low price due to high repair costs and high repair risk, phones will be sold AS IS if damaged.' },
+        { name: 'Galaxy Z Fold3 / Z Flip3', base: 150, note: 'Low price due to high repair costs and high repair risk, phones will be sold AS IS if damaged.' },
+        { name: 'Galaxy Z Fold4 / Z Flip4', base: 200, note: 'Low price due to high repair costs and high repair risk, phones will be sold AS IS if damaged.' },
+        { name: 'Galaxy Z Fold5 / Z Flip5', base: 250, note: 'Low price due to high repair costs and high repair risk, phones will be sold AS IS if damaged.' },
+        // A series: after A70 => $50, before => $5
+        { name: 'Galaxy A73 / A72 / A71', base: 50 },
+        { name: 'Galaxy A54 / A53 / A52', base: 50 },
+        { name: 'Galaxy A35 / A25 / A15', base: 50 },
+        { name: 'Galaxy A70', base: 5 },
+        { name: 'Galaxy A51 / A50', base: 5 },
+        { name: 'Galaxy A20 / A10', base: 5 },
+        { name: 'Galaxy S4 Zoom, S Beam', base: 50},
+        { name: 'Model Not Listed', base: 5 }
+      ];
+
+      const IPHONE_MODELS = [
+        { name: 'iPhone 15 Pro Max', base: 350 },
+        { name: 'iPhone 15 Pro', base: 300 },
+        { name: 'iPhone 15 / Plus', base: 275 },
+        { name: 'iPhone 14 Pro', base: 250 },
+        { name: 'iPhone 14 Pro Max', base: 275 },
+        { name: 'iPhone 14 / Plus', base: 225 },
+        { name: 'iPhone 13 Series (Excluding Mini)', base: 200 },   
+        { name: 'iPhone 13 Mini', base: 125 },
+        { name: 'iPhone 12 Mini', base: 95 },
+        { name: 'iPhone 12 Series (Excluding Mini)', base: 100 },
+        { name: 'iPhone 11 Series', base: 75 },
+        { name: 'iPhone XS / XS Max', base: 50 },
+        { name: 'iPhone XR', base: 45 },
+        { name: 'iPhone X', base: 50 },
+        { name: 'iPhone 9', base: 9999, note: 'funni' },
+        { name: 'iPhone 8 / 8 Plus', base: 10 },
+        // Older than iPhone 8 => $5
+        { name: 'iPhone 7 Plus', base: 10 },
+        { name: 'iPhone 6S / 6 / SE (1st Gen)', base: 5 },
+        // SE variants: SE (3rd gen) is modern, earlier SE are $5
+        { name: 'iPhone SE (3rd Gen - 2022)', base: 75 },
+        { name: 'iPhone SE (2nd Gen - 2020)', base: 5 },
+        { name: 'Model Not Listed', base: 5 }
+      ];
+
+      const GOOGLE_MODELS = [
+        { name: 'Pixel 9 Pro/XL', base: 350 },
+        { name: 'Pixel 9', base: 300 },
+        { name: 'Pixel 8 Pro', base: 250 },
+        { name: 'Pixel 7 Series', base: 150 },
+        { name: 'Pixel 6 Series', base: 75 },
+        { name: 'Pixel 5', base: 50 },
+        { name: 'Pixel 4 Series', base: 50 },
+        { name: 'Pixel 3 Series', base: 35 },
+        { name: 'Pixel 2 Series', base: 10 },
+        // Pixel 1 older => $5
+        { name: 'Pixel 1', base: 5 },
+        { name: 'Model Not Listed', base: 5 }
+      ];
+
+      // Common non-Samsung/Apple/Google Android models (for "Other Android")
+      const COMMON_ANDROID_MODELS = [
+        { name: 'OnePlus 12', base: 150 },
+        { name: 'OnePlus 11', base: 100 },
+        { name: 'Motorola Edge Series', base: 50 },
+        { name: 'Moto G Series', base: 25 },
+        { name: 'Xiaomi 14 Series', base: 50 },
+        { name: 'Xiaomi Redmi Note Series', base: 50 },
+        { name: 'Oppo Find/X Series', base: 50 },
+        { name: 'Oppo A Series', base: 25 },
+        { name: 'Huawei P/ Mate Series', base: 5, note: 'Recycling value shown; cannot be accepted due to activation/network restrictions in the US.' },
+        { name: 'Nokia Modern Android', base: 7 },
+        { name: 'Model Not Listed', base: 5 }
+      ];
+
+      // UI elements
+      const brandEl = document.getElementById('brand');
+      const modelEl = document.getElementById('model');
+      const storageEl = document.getElementById('storage');
+      const conditionEl = document.getElementById('condition');
+      const offerEl = document.getElementById('offer');
+      const offerNoteEl = document.getElementById('offerNote');
+      const contactTop = document.getElementById('contactTop');
+      const contactUnknown = document.getElementById('contactUnknown');
+      const contactBlock = document.getElementById('contactBlock');
+      const modelHint = document.getElementById('modelHint');
+
+      contactTop.addEventListener('click', () => window.open(CONTACT_URL, '_blank'));
+      contactUnknown.addEventListener('click', () => window.open(CONTACT_URL, '_blank'));
+
+      // Ensure html2canvas is available; load dynamically when needed
+      function loadHtml2Canvas(callback){
+        if(window.html2canvas || window.html2canvas) return callback();
+        const s = document.createElement('script');
+        s.src = 'https://html2canvas.hertzen.com/dist/html2canvas.min.js';
+        s.onload = () => callback();
+        s.onerror = () => callback(new Error('Failed to load html2canvas'));
+        document.head.appendChild(s);
+      }
+
+      function exportOfferAsJpeg(){
+        // gather current offer data
+        const brand = brandEl.options[brandEl.selectedIndex] ? brandEl.options[brandEl.selectedIndex].text : '';
+        const modelName = modelEl.value || (modelEl.options[modelEl.selectedIndex] ? modelEl.options[modelEl.selectedIndex].text : '');
+        const storage = storageEl.value ? (storageEl.options[storageEl.selectedIndex] ? storageEl.options[storageEl.selectedIndex].text : storageEl.value + 'GB') : '';
+        const condition = conditionEl.options[conditionEl.selectedIndex] ? conditionEl.options[conditionEl.selectedIndex].text : '';
+        const price = offerEl.textContent || '';
+        const note = offerNoteEl.textContent || '';
+
+        if(!price || price === '—' || price === '$PLACEHOLDER') return alert('No offer to export. Please select a model and options first.');
+
+        loadHtml2Canvas((err) => {
+          if(err) return alert('Could not load export library.');
+
+          // build a temporary export card element (so we don't capture the export button)
+          const card = document.createElement('div');
+          card.id = 'exportCard';
+          card.style.boxSizing = 'border-box';
+          card.style.width = '720px';
+          card.style.padding = '22px';
+          card.style.borderRadius = '12px';
+          card.style.background = '#ffffff';
+          card.style.color = '#06202a';
+          card.style.fontFamily = 'system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif';
+          card.style.boxShadow = '0 6px 18px rgba(8,23,42,0.06)';
+          card.style.border = '1px solid #e6eef6';
+
+          const header = document.createElement('div');
+          header.style.display = 'flex';
+          header.style.justifyContent = 'space-between';
+          header.style.alignItems = 'center';
+
+          const title = document.createElement('div');
+          title.innerHTML = '<strong style="font-size:18px">Farrell Electronics</strong><div style="font-size:12px;color:#52606a;margin-top:4px">Trade-In Offer</div>';
+          header.appendChild(title);
+
+          const when = document.createElement('div');
+          const d = new Date();
+          when.style.fontSize = '12px';
+          when.style.color = '#52606a';
+          when.textContent = d.toLocaleString();
+          header.appendChild(when);
+
+          card.appendChild(header);
+
+          const hr = document.createElement('div');
+          hr.style.height = '1px';
+          hr.style.background = '#f1f7ff';
+          hr.style.margin = '12px 0';
+          card.appendChild(hr);
+
+          const info = document.createElement('div');
+          info.style.display = 'grid';
+          info.style.gridTemplateColumns = '1fr 1fr';
+          info.style.gap = '8px';
+
+          function infoRow(label, val){
+            const wrapper = document.createElement('div');
+            wrapper.style.fontSize = '13px';
+            wrapper.innerHTML = '<div style="color:#52606a;font-weight:600;margin-bottom:6px">' + label + '</div><div style="font-weight:700">' + (val || '—') + '</div>';
+            return wrapper;
+          }
+
+          info.appendChild(infoRow('Brand', brand));
+          info.appendChild(infoRow('Model', modelName));
+          info.appendChild(infoRow('Storage', storage));
+          info.appendChild(infoRow('Condition', condition));
+          card.appendChild(info);
+
+          const offerWrap = document.createElement('div');
+          offerWrap.style.marginTop = '12px';
+          offerWrap.innerHTML = '<div style="color:#52606a;font-weight:600;margin-bottom:8px">Estimated Offer</div>' +
+                                '<div style="font-size:36px;font-weight:800;color:#0b69ff">' + price + '</div>' +
+                                '<div style="color:#52606a;margin-top:8px">' + (note || '') + '</div>';
+          card.appendChild(offerWrap);
+
+          const footer = document.createElement('div');
+          footer.style.marginTop = '14px';
+          footer.style.fontSize = '12px';
+          footer.style.color = '#52606a';
+          footer.innerHTML = 'Farrell Electronics — contact via Facebook for questions.<br><strong>Send this offer to Farrell Electronics to confirm your trade in. Trade in only available with the purchase of a new device.</strong>';
+          card.appendChild(footer);
+
+          // append offscreen then capture
+          card.style.position = 'fixed';
+          card.style.left = '50%';
+          card.style.top = '50%';
+          card.style.transform = 'translate(-50%,-50%)';
+          card.style.zIndex = '99999';
+          document.body.appendChild(card);
+
+          window.html2canvas(card, { backgroundColor: '#ffffff', scale: 2 }).then(canvas => {
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+            const a = document.createElement('a');
+            a.href = dataUrl;
+            a.download = 'tradein-offer-' + Date.now() + '.jpg';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            // remove card
+            card.remove();
+          }).catch(e => {
+            console.error(e);
+            card.remove();
+            alert('Failed to generate image.');
+          });
+        });
+      }
+
+      // Ensure initial disabled state for selectors (use attribute to be explicit)
+      modelEl.setAttribute('disabled','disabled'); modelEl.style.pointerEvents='none';
+      storageEl.setAttribute('disabled','disabled'); storageEl.style.pointerEvents='none';
+      conditionEl.setAttribute('disabled','disabled'); conditionEl.style.pointerEvents='none';
+
+      function populateModels(list){
+        modelEl.innerHTML = '';
+        const empty = document.createElement('option');
+        empty.value = '';
+        empty.textContent = '-- Choose Model --';
+        modelEl.appendChild(empty);
+        list.forEach(m => {
+          const o = document.createElement('option');
+          o.value = m.name;
+          o.textContent = m.name;
+          modelEl.appendChild(o);
+        });
+      }
+
+      function getModelObject(brand, modelName){
+        if(!brand) return null;
+        let list = [];
+        if(brand === 'samsung') list = SAMSUNG_MODELS;
+        if(brand === 'apple') list = IPHONE_MODELS;
+        if(brand === 'google') list = GOOGLE_MODELS;
+        if(brand === 'other') list = COMMON_ANDROID_MODELS.concat([{ name: 'Other Android (flat rate)', base: 5 }]);
+        return list.find(m => m.name === modelName) || null;
+      }
+
+      function formatMoney(v){
+        return '$' + v.toFixed(0);
+      }
+
+      function update(){
+        const brand = brandEl.value;
+        const modelName = modelEl.value;
+        const storage = storageEl.value;
+        const condition = conditionEl.value;
+
+        contactBlock.style.display = 'none';
+        modelHint.textContent = '';
+
+        if(!brand){
+          modelEl.disabled = true;
+          offerEl.textContent = '—';
+          offerNoteEl.textContent = '';
+          return;
+        }
+
+        let list = [];
+        if(brand === 'samsung') list = SAMSUNG_MODELS;
+        if(brand === 'apple') list = IPHONE_MODELS;
+        if(brand === 'google') list = GOOGLE_MODELS;
+        if(brand === 'other') list = [];
+
+        // Ensure model select is enabled for non-'other' brands (remove attribute and property)
+        if(brand && brand !== 'other'){
+          modelEl.removeAttribute('disabled');
+          modelEl.disabled = false;
+        }
+
+        // Populate models for selectable brands
+        if(brand === 'other'){
+          // show a list of common non-brand models plus flat-rate option
+          const combined = COMMON_ANDROID_MODELS.concat([{ name: 'Other Android (flat rate)', base: 5 }]);
+          populateModels(combined);
+          modelEl.removeAttribute('disabled'); modelEl.disabled = false; modelEl.style.pointerEvents='auto';
+          modelHint.textContent = 'Choose a common Android model or select "Other Android (flat rate)".';
+        } else {
+          modelEl.disabled = false;
+          if(modelEl.options.length <= 1){
+            populateModels(list);
+          }
+        }
+
+        const modelObj = getModelObject(brand, modelName);
+
+        // If the model has an advisory note, surface it to the model hint area
+        if (modelObj && modelObj.note) {
+          modelHint.textContent = modelObj.note;
+        } else {
+          modelHint.textContent = '';
+        }
+
+        // Handle non-numeric special base values (e.g., 'kaboom') safely by showing the raw value
+        if(modelObj && modelObj.base !== null){
+          const baseRaw = modelObj.base;
+          const baseNum = Number(baseRaw);
+          if(!Number.isFinite(baseNum) && typeof baseRaw === 'string'){
+            // show the literal base string and note (preserve easter-eggs)
+            offerEl.textContent = String(baseRaw);
+            offerNoteEl.textContent = modelObj.note || 'Special pricing — contact us for details.';
+            // If this special entry implies contacting, show contact block
+            if(String(baseRaw).toLowerCase().includes('kaboom')) contactBlock.style.display = 'block';
+            return;
+          }
+        }
+
+        if(brand === 'other'){
+          // If no specific model selected or the user chose the generic flat-rate option,
+          // show the flat $5 recycling offer. Otherwise continue to calculate using the
+          // selected common Android model's base value.
+          if(!modelObj || !modelName || modelName === 'Other Android (flat rate)' || (modelObj && Number(modelObj.base) === 5 && modelObj.name === 'Other Android (flat rate)')){
+            offerEl.textContent = formatMoney(5);
+            offerNoteEl.textContent = 'Standard flat rate for Other Android devices.';
+            contactBlock.style.display = 'block';
+            return;
+          }
+          // else fall through and calculate using modelObj
+        }
+
+        if(!modelObj){
+          offerEl.textContent = '—';
+          offerNoteEl.textContent = '';
+          return;
+        }
+
+        // If model base is null -> placeholder
+        if(modelObj.base === null){
+          offerEl.textContent = '$PLACEHOLDER';
+          offerNoteEl.textContent = 'Price calculated based on model, storage and condition.';
+          // treat placeholder like a non-contact generic case
+          return;
+        }
+
+        // Fixed $5 or $50 handled by modelObj.base numeric
+        // Use the entered base as the actual price (no 50% reduction)
+        let base = Number(modelObj.base);
+
+        // Apply storage multiplier to the entered base
+        const sm = (STORAGE_MULT[storage] !== undefined) ? STORAGE_MULT[storage] : 1.0;
+        let valueBeforeCondition = base * sm;
+
+        let value;
+        // Special handling for devices that won't turn on
+        if(condition === 'dead'){
+          // Not working: $5 for phones with entered base under $250, $50 for phones with entered base $250 or over
+          value = (base < 250) ? 5 : 50;
+        } else {
+          // Apply condition multiplier for other states (like_new, good, fair, cracked)
+          const cm = CONDITION_MULT[condition] || 1;
+          value = valueBeforeCondition * cm;
+        }
+
+        // Minimum $5 for any non-placeholder
+        if(value < 5) value = 5;
+
+        offerEl.textContent = formatMoney(value);
+        offerNoteEl.textContent = 'Price calculated based on model, storage and condition.';
+
+        // If modelObj.base is exactly 5 (the fixed low value), surface contact option
+        if(Number(modelObj.base) === 5){
+          contactBlock.style.display = 'block';
+        }
+      }
+
+      // Events
+      brandEl.addEventListener('change', () => {
+        // Reset model list when brand changes
+        const brand = brandEl.value;
+        // disable dependent fields until model selected
+        storageEl.disabled = true;
+        conditionEl.disabled = true;
+
+        if(brand === 'samsung') {
+          populateModels(SAMSUNG_MODELS);
+          modelEl.removeAttribute('disabled');
+          modelEl.disabled = false;
+          modelEl.style.pointerEvents='auto';
+          try{ modelEl.focus(); }catch(e){}
+        }
+        else if(brand === 'apple') {
+          populateModels(IPHONE_MODELS);
+          modelEl.removeAttribute('disabled');
+          modelEl.disabled = false;
+          try{ modelEl.focus(); }catch(e){}
+        }
+        else if(brand === 'google') {
+          populateModels(GOOGLE_MODELS);
+          modelEl.removeAttribute('disabled');
+          modelEl.disabled = false;
+          try{ modelEl.focus(); }catch(e){}
+        }
+        else if(brand === 'other') {
+          // Populate common Android models immediately and enable selection
+          const combined = COMMON_ANDROID_MODELS.concat([{ name: 'Other Android (flat rate)', base: 5 }]);
+          populateModels(combined);
+          modelEl.removeAttribute('disabled'); modelEl.disabled = false; modelEl.style.pointerEvents='auto';
+          // keep storage/condition disabled until a specific model is chosen
+          storageEl.setAttribute('disabled','disabled'); storageEl.style.pointerEvents='none';
+          conditionEl.setAttribute('disabled','disabled'); conditionEl.style.pointerEvents='none';
+        } else {
+          modelEl.innerHTML = '';
+          const empty = document.createElement('option'); empty.value = ''; empty.textContent = '-- Choose Model --'; modelEl.appendChild(empty);
+          modelEl.setAttribute('disabled','disabled'); modelEl.style.pointerEvents='none';
+        }
+
+        modelEl.value = '';
+        update();
+      });
+
+      modelEl.addEventListener('change', () => {
+        // Enable storage and condition once a model is selected (except 'other')
+        const brand = brandEl.value;
+        const modelObj = getModelObject(brand, modelEl.value);
+        if(modelEl.value && modelEl.value !== 'other'){
+          // populate storage options for this model (or use defaults)
+          const storageOptions = (modelObj && modelObj.storageOptions) ? modelObj.storageOptions : DEFAULT_STORAGE_OPTIONS;
+          populateStorageOptions(storageOptions);
+          storageEl.removeAttribute('disabled'); storageEl.disabled = false; storageEl.style.pointerEvents='auto';
+          conditionEl.removeAttribute('disabled'); conditionEl.disabled = false; conditionEl.style.pointerEvents='auto';
+        } else {
+          storageEl.setAttribute('disabled','disabled'); storageEl.disabled = true; storageEl.style.pointerEvents='none';
+          conditionEl.setAttribute('disabled','disabled'); conditionEl.disabled = true; conditionEl.style.pointerEvents='none';
+        }
+        update();
+      });
+      storageEl.addEventListener('change', update);
+      conditionEl.addEventListener('change', update);
+
+      // Wire export button
+      try{
+        const exportBtn = document.getElementById('exportOffer');
+        if(exportBtn) exportBtn.addEventListener('click', exportOfferAsJpeg);
+      }catch(e){}
+
+      // Initialize
+      // leave models empty until brand chosen
+      update();
+
+    </script>
+  </body>
+</html>
