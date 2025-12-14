@@ -153,12 +153,6 @@
       // Model lists. Base values: numeric when fixed ($50 or $5) or null => $PLACEHOLDER for you to edit.
       const SAMSUNG_MODELS = [
         { name: 'Galaxy S24 Ultra', base: 300 },
-        // Tablets (placeholder prices for you to fill)
-        { name: 'Galaxy Tab S9 Series', base: null },
-        { name: 'Galaxy Tab S8 Series', base: null },
-        { name: 'Galaxy Tab S7 Series', base: null },
-        { name: 'Galaxy Tab S6 / S6 Lite', base: null },
-        { name: 'Galaxy Tab S5e', base: null },
         { name: 'Galaxy S24+', base: 215 },
         { name: 'Galaxy S24', base: 200 },
         { name: 'Galaxy S23 Ultra', base: 250 },
@@ -191,18 +185,23 @@
         { name: 'Galaxy A70', base: 5 },
         { name: 'Galaxy A51 / A50', base: 5 },
         { name: 'Galaxy A20 / A10', base: 5 },
-        { name: 'Galaxy S4 Zoom, S Beam', base: 50},
+        { name: 'Galaxy S4 Zoom, S Beam', base: 50 },
+        { name: 'Galaxy Tab S9', base: 150 },
+        { name: 'Galaxy Tab S9 Ultra', base: 250 },
+        { name: 'Galaxy Tab S8 Ultra', base: 150 },
+        { name: 'Galaxy Tab S8+', base: 125 },
+        { name: 'Galaxy Tab S8', base: 100 },
+        { name: 'Galaxy Tab S9 FE', base: 125 },
+        { name: 'Galaxy Tab S7 FE', base: 50 },
+        { name: 'Galaxy Tab S7 / Plus', base: 75 },
+        { name: 'Galaxy Tab S6 / S6 Lite', base: 45 },
+        { name: 'Galaxy Tab S5e', base: 25 },
+        { name: 'Galaxy Tab A Series', base: 5 },
         { name: 'Model Not Listed', base: 5 }
       ];
 
       const IPHONE_MODELS = [
         { name: 'iPhone 15 Pro Max', base: 350 },
-        // iPad models (placeholder prices for you to fill)
-        { name: 'iPad Pro (2024 / M4)', base: null },
-        { name: 'iPad Pro (2022 / M3)', base: null },
-        { name: 'iPad Air (5th Gen)', base: null },
-        { name: 'iPad (10th Gen)', base: null },
-        { name: 'iPad Mini (6th Gen)', base: null },
         { name: 'iPhone 15 Pro', base: 300 },
         { name: 'iPhone 15 / Plus', base: 275 },
         { name: 'iPhone 14 Pro', base: 250 },
@@ -224,6 +223,14 @@
         // SE variants: SE (3rd gen) is modern, earlier SE are $5
         { name: 'iPhone SE (3rd Gen - 2022)', base: 75 },
         { name: 'iPhone SE (2nd Gen - 2020)', base: 5 },
+        { name: 'iPad Pro (2024)', base: 500 },
+        { name: 'iPad Pro (2022)', base: 250 },
+        { name: 'iPad Pro (2021)', base: 200 },
+        { name: 'iPad Air (4th Gen)', base: 100 },
+        { name: 'iPad Air (5th Gen)', base: 125 },
+        { name: 'iPad (9th Gen)', base: 75 },
+        { name: 'iPad (10th Gen)', base: 125 },
+        { name: 'iPad Mini (6th Gen)', base: 25 },
         { name: 'Model Not Listed', base: 5 }
       ];
 
@@ -237,6 +244,7 @@
         { name: 'Pixel 4 Series', base: 50 },
         { name: 'Pixel 3 Series', base: 35 },
         { name: 'Pixel 2 Series', base: 10 },
+        { name: 'Pixel Tablet', base: 100 },
         // Pixel 1 older => $5
         { name: 'Pixel 1', base: 5 },
         { name: 'Model Not Listed', base: 5 }
