@@ -4,9 +4,15 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Farrell Electronics — Buy, Sell, Trade</title>
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js"></script>
+    <!-- Firebase SDK via Import Map -->
+    <script type="importmap">
+    {
+      "imports": {
+        "firebase/app": "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js"
+      }
+    }
+    </script>
     <style>
       :root{--bg:#ffffff;--card:#fff;--accent:#1a3a6b;--muted:#4a5568;--danger:#c33c1d}
       body{font-family:Tahoma,sans-serif;background:var(--bg);color:#1a2332;margin:0}
@@ -164,7 +170,10 @@
       </div>
     </div>
 
-    <script>
+    <script type="module">
+      import { initializeApp } from 'firebase/app';
+      import { getFirestore, collection, doc, onSnapshot, setDoc, addDoc, query, orderBy, where, getDocs, deleteDoc } from 'firebase/firestore';
+
       // Firebase Config
       const firebaseConfig = {
         apiKey: "AIzaSyAciAwaqVsB8ZYpVaq9mxkRsh44yl9Yxj4",
@@ -175,13 +184,12 @@
         appId: "1:723476822694:web:a9dcd471f4df668fafd267"
       };
 
-      // Initialize Firebase (check if already initialized)
+      // Initialize Firebase
       let db;
       try {
-        if (!firebase.apps.length) {
-          firebase.initializeApp(firebaseConfig);
-        }
-        db = firebase.firestore();
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        console.log('Firebase initialized successfully');
       } catch (err) {
         console.error('Firebase initialization error:', err);
       }
@@ -321,9 +329,10 @@
 
       // Load announcement from Firestore
       function loadAnnouncement() {
-        db.collection('site').doc('announcement').onSnapshot((doc) => {
-          if (doc.exists) {
-            const announcement = doc.data();
+        const announcementRef = doc(db, 'site', 'announcement');
+        onSnapshot(announcementRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const announcement = docSnap.data();
             announcementText.textContent = announcement.text || 'Welcome to Farrell Electronics';
             announcementInput.value = announcement.text || 'Welcome to Farrell Electronics';
           } else {
@@ -340,7 +349,7 @@
           alert('Please enter an announcement');
           return;
         }
-        db.collection('site').doc('announcement').set({
+        setDoc(doc(db, 'site', 'announcement'), {
           text: text,
           date: new Date().toISOString()
         }).then(() => {
@@ -366,14 +375,15 @@
         }
 
         // Check if already subscribed
-        db.collection('newsletters').where('email', '==', email).get().then((querySnapshot) => {
+        const q = query(collection(db, 'newsletters'), where('email', '==', email));
+        getDocs(q).then((querySnapshot) => {
           if (!querySnapshot.empty) {
             showNewsletterMsg('This email is already subscribed!', true);
             return;
           }
 
           // Add new subscriber
-          db.collection('newsletters').add({
+          addDoc(collection(db, 'newsletters'), {
             email: email,
             date: new Date().toISOString()
           }).then(() => {
@@ -395,7 +405,8 @@
 
       // Display subscribers from Firestore
       function displaySubscribers() {
-        db.collection('newsletters').orderBy('date', 'desc').onSnapshot((querySnapshot) => {
+        const q = query(collection(db, 'newsletters'), orderBy('date', 'desc'));
+        onSnapshot(q, (querySnapshot) => {
           const list = [];
           querySnapshot.forEach((doc) => {
             list.push(doc.data());
@@ -420,7 +431,8 @@
 
       // Export subscribers as CSV
       function exportSubscribers() {
-        db.collection('newsletters').orderBy('date', 'desc').get().then((querySnapshot) => {
+        const q = query(collection(db, 'newsletters'), orderBy('date', 'desc'));
+        getDocs(q).then((querySnapshot) => {
           if (querySnapshot.size === 0) {
             alert('No subscribers to export');
             return;
