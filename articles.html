@@ -125,9 +125,16 @@
         appId: "1:723476822694:web:a9dcd471f4df668fafd267"
       };
 
-      // Initialize Firebase
-      firebase.initializeApp(firebaseConfig);
-      const db = firebase.firestore();
+      // Initialize Firebase (check if already initialized)
+      let db;
+      try {
+        if (!firebase.apps.length) {
+          firebase.initializeApp(firebaseConfig);
+        }
+        db = firebase.firestore();
+      } catch (err) {
+        console.error('Firebase initialization error:', err);
+      }
 
       const ADMIN_PASSWORD = '2011birth*';
 
@@ -181,33 +188,90 @@
         loginError.classList.add('hidden');
       }
 
-      loginBtn.addEventListener('click', () => {
-        if (adminPassword.value === ADMIN_PASSWORD) {
-          localStorage.setItem('farrell_admin_articles_session', 'true');
-          closeLoginModal();
+      // Attach event listeners with null checks
+      if (loginBtn) {
+        loginBtn.addEventListener('click', () => {
+          if (adminPassword.value === ADMIN_PASSWORD) {
+            localStorage.setItem('farrell_admin_articles_session', 'true');
+            closeLoginModal();
+            checkLogin();
+          } else {
+            loginError.textContent = 'Incorrect password. Please try again.';
+            loginError.classList.remove('hidden');
+            adminPassword.value = '';
+            adminPassword.focus();
+          }
+        });
+      }
+
+      if (adminPassword) {
+        adminPassword.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter' && loginBtn) loginBtn.click();
+        });
+      }
+
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+          localStorage.removeItem('farrell_admin_articles_session');
           checkLogin();
-        } else {
-          loginError.textContent = 'Incorrect password. Please try again.';
-          loginError.classList.remove('hidden');
-          adminPassword.value = '';
-          adminPassword.focus();
-        }
-      });
+        });
+      }
 
-      adminPassword.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') loginBtn.click();
-      });
+      if (adminLoginBtn) {
+        adminLoginBtn.addEventListener('click', openLoginModal);
+      }
 
-      logoutBtn.addEventListener('click', () => {
-        localStorage.removeItem('farrell_admin_articles_session');
-        checkLogin();
-      });
+      if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', closeLoginModal);
+      }
 
-      adminLoginBtn.addEventListener('click', openLoginModal);
-      closeModalBtn.addEventListener('click', closeLoginModal);
-      loginModal.addEventListener('click', (e) => {
-        if (e.target === loginModal) closeLoginModal();
-      });
+      if (loginModal) {
+        loginModal.addEventListener('click', (e) => {
+          if (e.target === loginModal) closeLoginModal();
+        });
+      }
+
+      // Publish button with null check
+      if (publishBtn) {
+        publishBtn.addEventListener('click', () => {
+          const title = articleTitle.value.trim();
+          const content = articleContent.value.trim();
+
+          if (!title) {
+            alert('Please enter a title');
+            return;
+          }
+          if (!content) {
+            alert('Please enter content');
+            return;
+          }
+
+          db.collection('articles').add({
+            title,
+            content,
+            date: new Date().toISOString()
+          }).then(() => {
+            successMsg.textContent = 'Article published successfully!';
+            successMsg.classList.remove('hidden');
+            setTimeout(() => {
+              successMsg.classList.add('hidden');
+            }, 3000);
+
+            articleTitle.value = '';
+            articleContent.value = '';
+            renderArticles();
+          }).catch((err) => {
+            console.error('Error publishing article:', err);
+          });
+        });
+      }
+
+      if (clearFormBtn) {
+        clearFormBtn.addEventListener('click', () => {
+          articleTitle.value = '';
+          articleContent.value = '';
+        });
+      }
 
       // Render articles from Firestore
       function renderArticles() {
@@ -299,6 +363,10 @@
         });
       }
 
+      // Initialize
+      console.log('Initializing articles app...');
+      console.log('Firebase apps:', firebase?.apps?.length || 'none');
+      console.log('DB instance:', db ? 'ready' : 'not ready');
       checkLogin();
     </script>
   </body>

@@ -175,12 +175,20 @@
         appId: "1:723476822694:web:a9dcd471f4df668fafd267"
       };
 
-      // Initialize Firebase
-      firebase.initializeApp(firebaseConfig);
-      const db = firebase.firestore();
+      // Initialize Firebase (check if already initialized)
+      let db;
+      try {
+        if (!firebase.apps.length) {
+          firebase.initializeApp(firebaseConfig);
+        }
+        db = firebase.firestore();
+      } catch (err) {
+        console.error('Firebase initialization error:', err);
+      }
 
       // Admin Password
       const ADMIN_PASSWORD = '2011birth*';
+      let isLoggedIn = false;
 
       // DOM Elements
       const adminLoginBtn = document.getElementById('adminLoginBtn');
@@ -203,8 +211,6 @@
       const subscribersList = document.getElementById('subscribersList');
       const subscriberCount = document.getElementById('subscriberCount');
       const exportSubscribersBtn = document.getElementById('exportSubscribersBtn');
-
-      let isLoggedIn = false;
 
       // Check if user is logged in
       function checkLogin() {
@@ -243,36 +249,75 @@
         loginError.classList.add('hidden');
       }
 
-      // Login handler
-      loginBtn.addEventListener('click', () => {
-        if (adminPassword.value === ADMIN_PASSWORD) {
-          localStorage.setItem('farrell_admin_home_session', 'true');
-          closeLoginModal();
+      // Attach event listeners with null checks
+      if (loginBtn) {
+        loginBtn.addEventListener('click', () => {
+          if (adminPassword.value === ADMIN_PASSWORD) {
+            localStorage.setItem('farrell_admin_home_session', 'true');
+            closeLoginModal();
+            checkLogin();
+          } else {
+            loginError.textContent = 'Incorrect password. Please try again.';
+            loginError.classList.remove('hidden');
+            adminPassword.value = '';
+            adminPassword.focus();
+          }
+        });
+      } else {
+        console.error('loginBtn not found');
+      }
+
+      if (adminPassword) {
+        adminPassword.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter' && loginBtn) loginBtn.click();
+        });
+      }
+
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+          localStorage.removeItem('farrell_admin_home_session');
           checkLogin();
-        } else {
-          loginError.textContent = 'Incorrect password. Please try again.';
-          loginError.classList.remove('hidden');
-          adminPassword.value = '';
-          adminPassword.focus();
-        }
-      });
+        });
+      }
 
-      adminPassword.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') loginBtn.click();
-      });
+      if (adminLoginBtn) {
+        adminLoginBtn.addEventListener('click', openLoginModal);
+      } else {
+        console.error('adminLoginBtn not found');
+      }
 
-      // Logout handler
-      logoutBtn.addEventListener('click', () => {
-        localStorage.removeItem('farrell_admin_home_session');
-        checkLogin();
-      });
+      if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', closeLoginModal);
+      }
 
-      // Modal button handlers
-      adminLoginBtn.addEventListener('click', openLoginModal);
-      closeModalBtn.addEventListener('click', closeLoginModal);
-      loginModal.addEventListener('click', (e) => {
-        if (e.target === loginModal) closeLoginModal();
-      });
+      if (loginModal) {
+        loginModal.addEventListener('click', (e) => {
+          if (e.target === loginModal) closeLoginModal();
+        });
+      }
+
+      // Newsletter subscription with null check
+      if (subscribeBtn) {
+        subscribeBtn.addEventListener('click', () => {
+          addSubscriber(newsletterEmail.value);
+        });
+      } else {
+        console.error('subscribeBtn not found');
+      }
+
+      if (newsletterEmail) {
+        newsletterEmail.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter' && subscribeBtn) subscribeBtn.click();
+        });
+      }
+
+      if (saveAnnouncementBtn) {
+        saveAnnouncementBtn.addEventListener('click', saveAnnouncement);
+      }
+
+      if (exportSubscribersBtn) {
+        exportSubscribersBtn.addEventListener('click', exportSubscribers);
+      }
 
       // Load announcement from Firestore
       function loadAnnouncement() {
@@ -397,16 +442,6 @@
         });
       }
 
-      subscribeBtn.addEventListener('click', () => {
-        addSubscriber(newsletterEmail.value);
-      });
-
-      newsletterEmail.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') subscribeBtn.click();
-      });
-
-      exportSubscribersBtn.addEventListener('click', exportSubscribers);
-
       // Utility functions
       function escapeHtml(text) {
         const div = document.createElement('div');
@@ -424,8 +459,12 @@
       }
 
       // Initialize
+      console.log('Initializing app...');
+      console.log('Firebase apps:', firebase?.apps?.length || 'none');
+      console.log('DB instance:', db ? 'ready' : 'not ready');
       checkLogin();
       loadAnnouncement();
+      displaySubscribers();
     </script>
   </body>
 </html>
