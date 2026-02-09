@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Farrell Electronics — Buy, Sell, Trade</title>
+    <style>
+      :root{--bg:#ffffff;--card:#fff;--accent:#1a3a6b;--muted:#4a5568;--danger:#c33c1d}
+      body{font-family:Tahoma,sans-serif;background:var(--bg);color:#1a2332;margin:0}
+      .site{max-width:960px;margin:0 auto;padding:20px}
+      header{background:linear-gradient(135deg, #1a3a6b 0%, #2d5a8c 100%);color:#fff;padding:40px 20px;text-align:center;margin-bottom:0}
+      header h1{font-size:32px;margin:0;margin-bottom:8px}
+      header p{font-size:16px;margin:0;opacity:0.9}
+      .nav{background:var(--bg);padding:20px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+      .nav-btn{background:var(--accent);color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none;display:inline-block;font-size:14px;cursor:pointer;border:none}
+      .nav-btn:hover{opacity:0.9}
+      .nav-logout{background:#4a5568}
+      h1{font-size:20px;margin:0}
+      h2{font-size:18px;margin-top:0;color:#1a2332}
+      .btn{background:var(--accent);color:#fff;padding:10px 14px;border-radius:8px;border:none;cursor:pointer;font-size:14px;text-decoration:none;display:inline-block}
+      .btn:hover{opacity:0.9}
+      .btn-secondary{background:#4a5568;color:#fff}
+      .btn-sm{padding:8px 12px;font-size:12px}
+      .card{background:var(--card);padding:18px;border-radius:12px;box-shadow:0 6px 18px rgba(26,58,107,0.06);margin-bottom:16px}
+      label{display:block;font-weight:600;margin-bottom:6px;margin-top:12px}
+      label:first-child{margin-top:0}
+      input[type=text],input[type=email],textarea,input[type=password]{width:100%;padding:10px;border:1px solid #d0d8e8;border-radius:8px;margin-bottom:12px;box-sizing:border-box;font-family:inherit}
+      textarea{resize:vertical;min-height:80px}
+      .muted{color:var(--muted);font-size:13px}
+      .small{font-size:13px}
+      footer{margin-top:20px;color:var(--muted);font-size:13px;text-align:center}
+      a{color:var(--accent);text-decoration:none}
+      a:hover{text-decoration:underline}
+      .hidden{display:none}
+      .admin-section{background:#f5f7fb;border:1px solid #d0d8e8;padding:16px;border-radius:8px;margin-bottom:16px}
+      .success-msg{background:#f0fff4;border:1px solid #c6f6d5;color:#22543d;padding:12px;border-radius:8px;margin-bottom:12px}
+      .error-msg{background:#fff5f5;border:1px solid #f5d5c8;color:var(--danger);padding:12px;border-radius:8px;margin-bottom:12px}
+      
+      /* Features grid */
+      .features-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));margin-bottom:20px}
+      .feature-card{background:var(--card);padding:24px;border-radius:12px;box-shadow:0 2px 8px rgba(26,58,107,0.1);text-align:center}
+      .feature-icon{font-size:32px;margin-bottom:12px}
+      .feature-card h3{margin:0 0 8px 0;font-size:16px}
+      .feature-card p{margin:0;color:var(--muted);font-size:13px}
+      .feature-card a{display:inline-block;margin-top:12px}
+      
+      /* Announcement banner */
+      .announcement-banner{background:linear-gradient(135deg, #1a3a6b 0%, #2d5a8c 100%);color:#fff;padding:20px;border-radius:8px;margin-bottom:20px;text-align:center;min-height:60px;display:flex;align-items:center;justify-content:center}
+      .announcement-banner h3{margin:0;font-size:18px}
+      
+      /* Newsletter section */
+      .newsletter-section{background:var(--card);border:2px solid var(--accent);padding:24px;border-radius:12px;margin-bottom:20px}
+      .newsletter-section h2{margin-top:0}
+      .newsletter-form{display:flex;gap:8px;margin-bottom:12px}
+      .newsletter-form input{flex:1}
+      .newsletter-form button{min-width:100px}
+      
+      /* Modal styles */
+      .modal{display:none;position:fixed;z-index:1000;left:0;top:0;width:100%;height:100%;background-color:rgba(0,0,0,0.5);overflow-y:auto}
+      .modal.active{display:flex;align-items:flex-start;justify-content:center;padding:20px 0}
+      .modal-content{background-color:var(--card);padding:30px;border-radius:12px;width:90%;max-width:500px;box-shadow:0 6px 20px rgba(26,58,107,0.15);margin-top:20px}
+      .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+      .modal-header h2{margin:0}
+      .close-modal{background:none;border:none;font-size:28px;cursor:pointer;color:var(--muted)}
+      .close-modal:hover{color:#1a2332}
+      .login-error{background:#fff5f5;border:1px solid #f5d5c8;color:var(--danger);padding:10px;border-radius:6px;margin-bottom:12px;font-size:13px}
+      
+      /* Subscribers list */
+      .subscribers-list{background:#f5f7fb;border:1px solid #d0d8e8;border-radius:8px;margin-top:12px;max-height:300px;overflow-y:auto}
+      .subscriber-item{padding:12px;border-bottom:1px solid #d0d8e8;font-size:13px}
+      .subscriber-item:last-child{border-bottom:none}
+      .subscriber-email{font-weight:600}
+      .subscriber-date{color:var(--muted);font-size:12px}
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Farrell Electronics</h1>
+      <p>Buy, Sell, and Trade Your Devices</p>
+    </header>
+
+    <div class="nav">
+      <a href="index.html" class="nav-btn">Trade-In Estimator</a>
+      <a href="listings.html" class="nav-btn">Browse Listings</a>
+      <a href="articles.html" class="nav-btn">News & Articles</a>
+      <button class="nav-btn" id="adminLoginBtn">Admin</button>
+      <button class="nav-btn nav-logout hidden" id="logoutBtn">Logout</button>
+    </div>
+
+    <div class="site">
+      <!-- Announcement Banner -->
+      <div id="announcementBanner" class="announcement-banner">
+        <h3 id="announcementText">Welcome to Farrell Electronics</h3>
+      </div>
+
+      <!-- Admin Announcement Editor -->
+      <div id="adminAnnouncement" class="admin-section hidden">
+        <h3>Edit Announcement</h3>
+        <textarea id="announcementInput" placeholder="Enter announcement text (e.g., Happy Holidays! Winter Sale Now Live!)"></textarea>
+        <button class="btn" id="saveAnnouncementBtn">Save Announcement</button>
+        <div id="announcementSuccessMsg" class="success-msg hidden"></div>
+      </div>
+
+      <!-- Features -->
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">💰</div>
+          <h3>Estimate Trade-In Value</h3>
+          <p>Quickly get an offer for your used phone or tablet</p>
+          <a href="index.html" class="btn btn-sm">Get Estimate</a>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📦</div>
+          <h3>Shop Listings</h3>
+          <p>Browse our current inventory of phones and accessories</p>
+          <a href="listings.html" class="btn btn-sm">Browse Now</a>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📰</div>
+          <h3>Latest News</h3>
+          <p>Read our articles about tech deals and updates</p>
+          <a href="articles.html" class="btn btn-sm">Read Articles</a>
+        </div>
+      </div>
+
+      <!-- Newsletter Section -->
+      <div class="newsletter-section">
+        <h2>📧 Subscribe to Our Newsletter</h2>
+        <p>Get updates on new listings, deals, and exclusive offers delivered to your inbox!</p>
+        <div class="newsletter-form">
+          <input type="email" id="newsletterEmail" placeholder="Enter your email" />
+          <button class="btn" id="subscribeBtn">Subscribe</button>
+        </div>
+        <div id="newsletterMsg"></div>
+      </div>
+
+      <!-- Admin Newsletter Section -->
+      <div id="adminNewsletter" class="admin-section hidden">
+        <h2>Newsletter Subscribers</h2>
+        <p class="small"><strong>Total Subscribers: <span id="subscriberCount">0</span></strong></p>
+        <button class="btn btn-secondary btn-sm" id="exportSubscribersBtn">Export Subscribers</button>
+        <div id="subscribersList" class="subscribers-list"></div>
+      </div>
+
+      <footer>
+        Contact us on <a href="https://www.facebook.com/marketplace/profile/61554953247457/" target="_blank">Facebook</a> for more information.
+      </footer>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Admin Login</h2>
+          <button class="close-modal" id="closeModalBtn">&times;</button>
+        </div>
+        <div id="loginError" class="login-error hidden"></div>
+        <label for="adminPassword">Password</label>
+        <input type="password" id="adminPassword" placeholder="Enter admin password" />
+        <button class="btn" id="loginBtn" style="width:100%">Login</button>
+      </div>
+    </div>
+
+    <script>
+      // Configuration - SAME PASSWORD AS OTHER PAGES
+      const ADMIN_PASSWORD = '2011birth*';
+      const ANNOUNCEMENTS_KEY = 'farrell_announcements';
+      const SUBSCRIBERS_KEY = 'farrell_newsletter_subscribers';
+
+      // DOM Elements
+      const adminLoginBtn = document.getElementById('adminLoginBtn');
+      const logoutBtn = document.getElementById('logoutBtn');
+      const loginModal = document.getElementById('loginModal');
+      const loginBtn = document.getElementById('loginBtn');
+      const closeModalBtn = document.getElementById('closeModalBtn');
+      const adminPassword = document.getElementById('adminPassword');
+      const loginError = document.getElementById('loginError');
+      const adminAnnouncement = document.getElementById('adminAnnouncement');
+      const adminNewsletter = document.getElementById('adminNewsletter');
+      const announcementInput = document.getElementById('announcementInput');
+      const saveAnnouncementBtn = document.getElementById('saveAnnouncementBtn');
+      const announcementSuccessMsg = document.getElementById('announcementSuccessMsg');
+      const announcementBanner = document.getElementById('announcementBanner');
+      const announcementText = document.getElementById('announcementText');
+      const newsletterEmail = document.getElementById('newsletterEmail');
+      const subscribeBtn = document.getElementById('subscribeBtn');
+      const newsletterMsg = document.getElementById('newsletterMsg');
+      const subscribersList = document.getElementById('subscribersList');
+      const subscriberCount = document.getElementById('subscriberCount');
+      const exportSubscribersBtn = document.getElementById('exportSubscribersBtn');
+
+      let isLoggedIn = false;
+
+      // Check if user is logged in
+      function checkLogin() {
+        const loginStatus = localStorage.getItem('farrell_admin_home_session');
+        isLoggedIn = loginStatus === 'true';
+        updateUIState();
+      }
+
+      function updateUIState() {
+        if (isLoggedIn) {
+          adminLoginBtn.classList.add('hidden');
+          logoutBtn.classList.remove('hidden');
+          adminAnnouncement.classList.remove('hidden');
+          adminNewsletter.classList.remove('hidden');
+        } else {
+          adminLoginBtn.classList.remove('hidden');
+          logoutBtn.classList.add('hidden');
+          adminAnnouncement.classList.add('hidden');
+          adminNewsletter.classList.add('hidden');
+        }
+        loadAnnouncement();
+        displaySubscribers();
+      }
+
+      // Modal functions
+      function openLoginModal() {
+        loginModal.classList.add('active');
+        adminPassword.focus();
+        loginError.classList.add('hidden');
+        adminPassword.value = '';
+      }
+
+      function closeLoginModal() {
+        loginModal.classList.remove('active');
+        adminPassword.value = '';
+        loginError.classList.add('hidden');
+      }
+
+      // Login handler
+      loginBtn.addEventListener('click', () => {
+        if (adminPassword.value === ADMIN_PASSWORD) {
+          localStorage.setItem('farrell_admin_home_session', 'true');
+          closeLoginModal();
+          checkLogin();
+        } else {
+          loginError.textContent = 'Incorrect password. Please try again.';
+          loginError.classList.remove('hidden');
+          adminPassword.value = '';
+          adminPassword.focus();
+        }
+      });
+
+      adminPassword.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') loginBtn.click();
+      });
+
+      // Logout handler
+      logoutBtn.addEventListener('click', () => {
+        localStorage.removeItem('farrell_admin_home_session');
+        checkLogin();
+      });
+
+      // Modal button handlers
+      adminLoginBtn.addEventListener('click', openLoginModal);
+      closeModalBtn.addEventListener('click', closeLoginModal);
+      loginModal.addEventListener('click', (e) => {
+        if (e.target === loginModal) closeLoginModal();
+      });
+
+      // Announcement management
+      function loadAnnouncement() {
+        const stored = localStorage.getItem(ANNOUNCEMENTS_KEY);
+        const announcement = stored ? JSON.parse(stored) : { text: 'Welcome to Farrell Electronics' };
+        announcementText.textContent = announcement.text;
+        announcementInput.value = announcement.text;
+      }
+
+      function saveAnnouncement() {
+        const text = announcementInput.value.trim();
+        if (!text) {
+          alert('Please enter an announcement');
+          return;
+        }
+        localStorage.setItem(ANNOUNCEMENTS_KEY, JSON.stringify({ text, date: new Date().toISOString() }));
+        announcementText.textContent = text;
+        announcementSuccessMsg.textContent = 'Announcement updated!';
+        announcementSuccessMsg.classList.remove('hidden');
+        setTimeout(() => {
+          announcementSuccessMsg.classList.add('hidden');
+        }, 3000);
+      }
+
+      saveAnnouncementBtn.addEventListener('click', saveAnnouncement);
+
+      // Newsletter management
+      function addSubscriber(email) {
+        if (!email.trim()) {
+          showNewsletterMsg('Please enter an email', true);
+          return;
+        }
+        if (!email.includes('@')) {
+          showNewsletterMsg('Please enter a valid email', true);
+          return;
+        }
+
+        let subscribers = localStorage.getItem(SUBSCRIBERS_KEY);
+        subscribers = subscribers ? JSON.parse(subscribers) : [];
+
+        // Check if already subscribed
+        if (subscribers.some(s => s.email === email)) {
+          showNewsletterMsg('This email is already subscribed!', true);
+          return;
+        }
+
+        subscribers.push({
+          email,
+          date: new Date().toISOString()
+        });
+
+        localStorage.setItem(SUBSCRIBERS_KEY, JSON.stringify(subscribers));
+        showNewsletterMsg('✓ Thank you for subscribing!', false);
+        newsletterEmail.value = '';
+        displaySubscribers();
+      }
+
+      function showNewsletterMsg(msg, isError) {
+        newsletterMsg.textContent = msg;
+        newsletterMsg.className = isError ? 'error-msg' : 'success-msg';
+        setTimeout(() => {
+          newsletterMsg.textContent = '';
+          newsletterMsg.className = '';
+        }, 4000);
+      }
+
+      function displaySubscribers() {
+        const subscribers = localStorage.getItem(SUBSCRIBERS_KEY);
+        const list = subscribers ? JSON.parse(subscribers) : [];
+        
+        subscriberCount.textContent = list.length;
+        
+        if (list.length === 0) {
+          subscribersList.innerHTML = '<div style="padding:12px;text-align:center;color:#4a5568">No subscribers yet</div>';
+          return;
+        }
+
+        subscribersList.innerHTML = list
+          .sort((a, b) => new Date(b.date) - new Date(a.date))
+          .map(sub => `
+            <div class="subscriber-item">
+              <div class="subscriber-email">${escapeHtml(sub.email)}</div>
+              <div class="subscriber-date">Signed up: ${formatDate(sub.date)}</div>
+            </div>
+          `).join('');
+      }
+
+      function exportSubscribers() {
+        const subscribers = localStorage.getItem(SUBSCRIBERS_KEY);
+        const list = subscribers ? JSON.parse(subscribers) : [];
+        
+        if (list.length === 0) {
+          alert('No subscribers to export');
+          return;
+        }
+
+        // Create CSV format
+        const csv = 'Email,Signup Date\n' + list.map(s => 
+          `"${s.email}","${formatDate(s.date)}"`
+        ).join('\n');
+
+        // Create download link
+        const element = document.createElement('a');
+        element.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv));
+        element.setAttribute('download', `farrell_subscribers_${new Date().toISOString().split('T')[0]}.csv`);
+        element.style.display = 'none';
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+      }
+
+      subscribeBtn.addEventListener('click', () => {
+        addSubscriber(newsletterEmail.value);
+      });
+
+      newsletterEmail.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') subscribeBtn.click();
+      });
+
+      exportSubscribersBtn.addEventListener('click', exportSubscribers);
+
+      // Utility functions
+      function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      function formatDate(isoDate) {
+        const date = new Date(isoDate);
+        return date.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
+      }
+
+      // Initialize
+      checkLogin();
+      loadAnnouncement();
+    </script>
+  </body>
+</html>
