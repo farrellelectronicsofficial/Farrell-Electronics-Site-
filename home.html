@@ -147,6 +147,10 @@
       </footer>
     </div>
 
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js"></script>
+
     <!-- Login Modal -->
     <div id="loginModal" class="modal">
       <div class="modal-content">
@@ -162,10 +166,22 @@
     </div>
 
     <script>
-      // Configuration - SAME PASSWORD AS OTHER PAGES
+      // Firebase Config
+      const firebaseConfig = {
+        apiKey: "AIzaSyAciAwaqVsB8ZYpVaq9mxkRsh44yl9Yxj4",
+        authDomain: "farrellelectronics-home-site.firebaseapp.com",
+        projectId: "farrellelectronics-home-site",
+        storageBucket: "farrellelectronics-home-site.firebasestorage.app",
+        messagingSenderId: "723476822694",
+        appId: "1:723476822694:web:a9dcd471f4df668fafd267"
+      };
+
+      // Initialize Firebase
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
+
+      // Admin Password
       const ADMIN_PASSWORD = '2011birth*';
-      const ANNOUNCEMENTS_KEY = 'farrell_announcements';
-      const SUBSCRIBERS_KEY = 'farrell_newsletter_subscribers';
 
       // DOM Elements
       const adminLoginBtn = document.getElementById('adminLoginBtn');
@@ -259,32 +275,42 @@
         if (e.target === loginModal) closeLoginModal();
       });
 
-      // Announcement management
+      // Load announcement from Firestore
       function loadAnnouncement() {
-        const stored = localStorage.getItem(ANNOUNCEMENTS_KEY);
-        const announcement = stored ? JSON.parse(stored) : { text: 'Welcome to Farrell Electronics' };
-        announcementText.textContent = announcement.text;
-        announcementInput.value = announcement.text;
+        db.collection('site').doc('announcement').onSnapshot((doc) => {
+          if (doc.exists) {
+            const announcement = doc.data();
+            announcementText.textContent = announcement.text || 'Welcome to Farrell Electronics';
+            announcementInput.value = announcement.text || 'Welcome to Farrell Electronics';
+          } else {
+            announcementText.textContent = 'Welcome to Farrell Electronics';
+            announcementInput.value = 'Welcome to Farrell Electronics';
+          }
+        });
       }
 
+      // Save announcement to Firestore
       function saveAnnouncement() {
         const text = announcementInput.value.trim();
         if (!text) {
           alert('Please enter an announcement');
           return;
         }
-        localStorage.setItem(ANNOUNCEMENTS_KEY, JSON.stringify({ text, date: new Date().toISOString() }));
-        announcementText.textContent = text;
-        announcementSuccessMsg.textContent = 'Announcement updated!';
-        announcementSuccessMsg.classList.remove('hidden');
-        setTimeout(() => {
-          announcementSuccessMsg.classList.add('hidden');
-        }, 3000);
+        db.collection('site').doc('announcement').set({
+          text: text,
+          date: new Date().toISOString()
+        }).then(() => {
+          announcementSuccessMsg.textContent = 'Announcement updated!';
+          announcementSuccessMsg.classList.remove('hidden');
+          setTimeout(() => {
+            announcementSuccessMsg.classList.add('hidden');
+          }, 3000);
+        });
       }
 
       saveAnnouncementBtn.addEventListener('click', saveAnnouncement);
 
-      // Newsletter management
+      // Add subscriber to Firestore
       function addSubscriber(email) {
         if (!email.trim()) {
           showNewsletterMsg('Please enter an email', true);
@@ -295,24 +321,23 @@
           return;
         }
 
-        let subscribers = localStorage.getItem(SUBSCRIBERS_KEY);
-        subscribers = subscribers ? JSON.parse(subscribers) : [];
-
         // Check if already subscribed
-        if (subscribers.some(s => s.email === email)) {
-          showNewsletterMsg('This email is already subscribed!', true);
-          return;
-        }
+        db.collection('newsletters').where('email', '==', email).get().then((querySnapshot) => {
+          if (!querySnapshot.empty) {
+            showNewsletterMsg('This email is already subscribed!', true);
+            return;
+          }
 
-        subscribers.push({
-          email,
-          date: new Date().toISOString()
+          // Add new subscriber
+          db.collection('newsletters').add({
+            email: email,
+            date: new Date().toISOString()
+          }).then(() => {
+            showNewsletterMsg('✓ Thank you for subscribing!', false);
+            newsletterEmail.value = '';
+            displaySubscribers();
+          });
         });
-
-        localStorage.setItem(SUBSCRIBERS_KEY, JSON.stringify(subscribers));
-        showNewsletterMsg('✓ Thank you for subscribing!', false);
-        newsletterEmail.value = '';
-        displaySubscribers();
       }
 
       function showNewsletterMsg(msg, isError) {
@@ -324,49 +349,53 @@
         }, 4000);
       }
 
+      // Display subscribers from Firestore
       function displaySubscribers() {
-        const subscribers = localStorage.getItem(SUBSCRIBERS_KEY);
-        const list = subscribers ? JSON.parse(subscribers) : [];
-        
-        subscriberCount.textContent = list.length;
-        
-        if (list.length === 0) {
-          subscribersList.innerHTML = '<div style="padding:12px;text-align:center;color:#4a5568">No subscribers yet</div>';
-          return;
-        }
+        db.collection('newsletters').orderBy('date', 'desc').onSnapshot((querySnapshot) => {
+          const list = [];
+          querySnapshot.forEach((doc) => {
+            list.push(doc.data());
+          });
 
-        subscribersList.innerHTML = list
-          .sort((a, b) => new Date(b.date) - new Date(a.date))
-          .map(sub => `
-            <div class="subscriber-item">
-              <div class="subscriber-email">${escapeHtml(sub.email)}</div>
-              <div class="subscriber-date">Signed up: ${formatDate(sub.date)}</div>
-            </div>
-          `).join('');
+          subscriberCount.textContent = list.length;
+
+          if (list.length === 0) {
+            subscribersList.innerHTML = '<div style="padding:12px;text-align:center;color:#4a5568">No subscribers yet</div>';
+            return;
+          }
+
+          subscribersList.innerHTML = list
+            .map(sub => `
+              <div class="subscriber-item">
+                <div class="subscriber-email">${escapeHtml(sub.email)}</div>
+                <div class="subscriber-date">Signed up: ${formatDate(sub.date)}</div>
+              </div>
+            `).join('');
+        });
       }
 
+      // Export subscribers as CSV
       function exportSubscribers() {
-        const subscribers = localStorage.getItem(SUBSCRIBERS_KEY);
-        const list = subscribers ? JSON.parse(subscribers) : [];
-        
-        if (list.length === 0) {
-          alert('No subscribers to export');
-          return;
-        }
+        db.collection('newsletters').orderBy('date', 'desc').get().then((querySnapshot) => {
+          if (querySnapshot.size === 0) {
+            alert('No subscribers to export');
+            return;
+          }
 
-        // Create CSV format
-        const csv = 'Email,Signup Date\n' + list.map(s => 
-          `"${s.email}","${formatDate(s.date)}"`
-        ).join('\n');
+          let csv = 'Email,Signup Date\n';
+          querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            csv += `"${data.email}","${formatDate(data.date)}"\n`;
+          });
 
-        // Create download link
-        const element = document.createElement('a');
-        element.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv));
-        element.setAttribute('download', `farrell_subscribers_${new Date().toISOString().split('T')[0]}.csv`);
-        element.style.display = 'none';
-        document.body.appendChild(element);
-        element.click();
-        document.body.removeChild(element);
+          const element = document.createElement('a');
+          element.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv));
+          element.setAttribute('download', `farrell_subscribers_${new Date().toISOString().split('T')[0]}.csv`);
+          element.style.display = 'none';
+          document.body.appendChild(element);
+          element.click();
+          document.body.removeChild(element);
+        });
       }
 
       subscribeBtn.addEventListener('click', () => {
