@@ -259,6 +259,7 @@
             content,
             date: new Date().toISOString()
           }).then(() => {
+            console.log('Article published successfully');
             successMsg.textContent = 'Article published successfully!';
             successMsg.classList.remove('hidden');
             setTimeout(() => {
@@ -270,6 +271,7 @@
             renderArticles();
           }).catch((err) => {
             console.error('Error publishing article:', err);
+            alert('Error publishing article: ' + err.message);
           });
         });
       }
@@ -374,9 +376,11 @@
 
       // Initialize
       console.log('Initializing articles app...');
-      console.log('Firebase apps:', firebase?.apps?.length || 'none');
       console.log('DB instance:', db ? 'ready' : 'not ready');
       checkLogin();
+
+      // Make functions globally accessible for onclick handlers
+      window.deleteArticle = deleteArticle;
     </script>
   </body>
 </html>

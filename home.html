@@ -353,11 +353,15 @@
           text: text,
           date: new Date().toISOString()
         }).then(() => {
+          console.log('Announcement saved successfully');
           announcementSuccessMsg.textContent = 'Announcement updated!';
           announcementSuccessMsg.classList.remove('hidden');
           setTimeout(() => {
             announcementSuccessMsg.classList.add('hidden');
           }, 3000);
+        }).catch((err) => {
+          console.error('Error saving announcement:', err);
+          alert('Error saving announcement: ' + err.message);
         });
       }
 
@@ -387,10 +391,17 @@
             email: email,
             date: new Date().toISOString()
           }).then(() => {
+            console.log('Subscriber added successfully');
             showNewsletterMsg('✓ Thank you for subscribing!', false);
             newsletterEmail.value = '';
             displaySubscribers();
+          }).catch((err) => {
+            console.error('Error adding subscriber:', err);
+            showNewsletterMsg('Error: ' + err.message, true);
           });
+        }).catch((err) => {
+          console.error('Error checking subscriber:', err);
+          showNewsletterMsg('Error: ' + err.message, true);
         });
       }
 
@@ -472,11 +483,16 @@
 
       // Initialize
       console.log('Initializing app...');
-      console.log('Firebase apps:', firebase?.apps?.length || 'none');
+      console.log('Firebase apps available');
       console.log('DB instance:', db ? 'ready' : 'not ready');
       checkLogin();
       loadAnnouncement();
       displaySubscribers();
+
+      // Make functions globally accessible for onclick handlers
+      window.addSubscriber = addSubscriber;
+      window.exportSubscribers = exportSubscribers;
+      window.saveAnnouncement = saveAnnouncement;
     </script>
   </body>
 </html>

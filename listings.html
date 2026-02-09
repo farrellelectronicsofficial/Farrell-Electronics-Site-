@@ -332,6 +332,7 @@
             renderListings();
           }).catch((err) => {
             console.error('Error adding listing:', err);
+            alert('Error adding listing: ' + err.message);
           });
         });
       }
@@ -412,9 +413,11 @@
 
       // Initialize
       console.log('Initializing listings app...');
-      console.log('Firebase apps:', firebase?.apps?.length || 'none');
       console.log('DB instance:', db ? 'ready' : 'not ready');
       checkLogin();
+
+      // Make functions globally accessible for onclick handlers
+      window.deleteListing = deleteListing;
     </script>
   </body>
 </html>
