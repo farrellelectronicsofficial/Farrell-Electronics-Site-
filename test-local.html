@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Local Button Test</title>
+  <style>
+    body {
+      font-family: Tahoma, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    h1 {
+      color: #1a3a6b;
+      text-align: center;
+    }
+    .section {
+      background: white;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h2 {
+      color: #1a3a6b;
+      font-size: 16px;
+      margin-top: 0;
+    }
+    button {
+      background: #1a3a6b;
+      color: white;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+      font-size: 13px;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
+    button.danger {
+      background: #c33c1d;
+    }
+    .output {
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      padding: 10px;
+      border-radius: 4px;
+      margin-top: 10px;
+      font-size: 12px;
+      font-family: monospace;
+      max-height: 200px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .success {
+      color: #22863a;
+    }
+    .error {
+      color: #cb2431;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      margin: 5px 0;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+  </style>
+  <!-- Firebase SDK via Import Map -->
+  <script type="importmap">
+  {
+    "imports": {
+      "firebase/app": "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js",
+      "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <h1>🧪 Local Firebase Test</h1>
+
+  <div class="section">
+    <h2>Firebase Connection</h2>
+    <button onclick="testConnection()">Test Connection</button>
+    <div id="connectOutput" class="output"></div>
+  </div>
+
+  <div class="section">
+    <h2>Announcement Tests</h2>
+    <input type="text" id="announcementInput" placeholder="Enter announcement text">
+    <button onclick="saveAnnouncement()">Save Announcement</button>
+    <button onclick="loadAnnouncement()">Load Announcement</button>
+    <button class="danger" onclick="deleteAnnouncement()">Delete Announcement</button>
+    <div id="announcementOutput" class="output"></div>
+  </div>
+
+  <div class="section">
+    <h2>Newsletter Tests</h2>
+    <input type="email" id="emailInput" placeholder="Enter email">
+    <button onclick="addNewsletter()">Add Email</button>
+    <button onclick="loadNewsletters()">Load All Emails</button>
+    <button class="danger" onclick="clearNewsletters()">Clear All</button>
+    <div id="newsletterOutput" class="output"></div>
+  </div>
+
+  <div class="section">
+    <h2>Articles Tests</h2>
+    <input type="text" id="titleInput" placeholder="Article title">
+    <textarea id="contentInput" placeholder="Article content" style="width:100%;padding:8px;margin:5px 0;border:1px solid #ddd;border-radius:4px;font-family:Tahoma"></textarea>
+    <button onclick="addArticle()">Add Article</button>
+    <button onclick="loadArticles()">Load All Articles</button>
+    <button class="danger" onclick="clearArticles()">Clear All</button>
+    <div id="articleOutput" class="output"></div>
+  </div>
+
+  <div class="section">
+    <h2>Listings Tests</h2>
+    <input type="text" id="listingTitleInput" placeholder="Listing title">
+    <input type="text" id="listingPriceInput" placeholder="Price">
+    <input type="text" id="listingEbayInput" placeholder="eBay link">
+    <button onclick="addListing()">Add Listing</button>
+    <button onclick="loadListings()">Load All Listings</button>
+    <button class="danger" onclick="clearListings()">Clear All</button>
+    <div id="listingOutput" class="output"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'firebase/app';
+    import { getFirestore, collection, doc, onSnapshot, setDoc, addDoc, query, orderBy, getDocs, deleteDoc, writeBatch } from 'firebase/firestore';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAciAwaqVsB8ZYpVaq9mxkRsh44yl9Yxj4",
+      authDomain: "farrellelectronics-home-site.firebaseapp.com",
+      projectId: "farrellelectronics-home-site",
+      storageBucket: "farrellelectronics-home-site.firebasestorage.app",
+      messagingSenderId: "723476822694",
+      appId: "1:723476822694:web:a9dcd471f4df668fafd267"
+    };
+
+    let db;
+
+    try {
+      const app = initializeApp(firebaseConfig);
+      db = getFirestore(app);
+      console.log('Firebase initialized');
+    } catch (err) {
+      console.error('Firebase init error:', err);
+    }
+
+    function output(id, text, isError = false) {
+      const el = document.getElementById(id);
+      el.innerHTML += (isError ? '<span class="error">' : '<span class="success">') + text + '</span>\n';
+      el.scrollTop = el.scrollHeight;
+    }
+
+    function clearOutput(id) {
+      document.getElementById(id).innerHTML = '';
+    }
+
+    // Connection Test
+    window.testConnection = async function() {
+      clearOutput('connectOutput');
+      output('connectOutput', '⏳ Testing connection...');
+      try {
+        const testDoc = await getDocs(collection(db, 'articles'));
+        output('connectOutput', '✓ Connection successful! Found ' + testDoc.size + ' articles');
+      } catch (err) {
+        output('connectOutput', '✗ Error: ' + err.message, true);
+      }
+    };
+
+    // Announcement
+    window.saveAnnouncement = async function() {
+      clearOutput('announcementOutput');
+      const text = document.getElementById('announcementInput').value;
+      if (!text) {
+        output('announcementOutput', '✗ Please enter text', true);
+        return;
+      }
+      output('announcementOutput', '⏳ Saving...');
+      try {
+        await setDoc(doc(db, 'site', 'announcement'), {
+          text: text,
+          date: new Date().toISOString()
+        });
+        output('announcementOutput', '✓ Announcement saved!');
+      } catch (err) {
+        output('announcementOutput', '✗ Error: ' + err.message, true);
+      }
+    };
+
+    window.loadAnnouncement = async function() {
+      clearOutput('announcementOutput');
+      output('announcementOutput', '⏳ Loading...');
+      try {
+        const snap = await getDocs(collection(db, 'site'));
+        const announcementDoc = snap.docs.find(d => d.id === 'announcement');
+        if (announcementDoc) {
+          const data = announcementDoc.data();
+          output('announcementOutput', '✓ Found:\n' + JSON.stringify(data, null, 2));
+          document.getElementById('announcementInput').value = data.text || '';
+        } else {
+          output('announcementOutput', '⚠ No announcement found');
+        }
+      } catch (err) {
+        output('announcementOutput', '✗ Error: ' + err.message, true);
+      }
+    };
+
+    window.deleteAnnouncement = async function() {
+      clearOutput('announcementOutput');
+      output('announcementOutput', '⏳ Deleting...');
+      try {
+        await deleteDoc(doc(db, 'site', 'announcement'));
+        output('announcementOutput', '✓ Deleted!');
+        document.getElementById('announcementInput').value = '';
+      } catch (err) {
+        output('announcementOutput', '✗ Error: ' + err.message, true);
+      }
+    };
+
+    // Newsletter
+    window.addNewsletter = async function() {
+      clearOutput('newsletterOutput');
+      const email = document.getElementById('emailInput').value;
+      if (!email) {
+        output('newsletterOutput', '✗ Please enter email', true);
+        return;
+      }
+      output('newsletterOutput', '⏳ Adding...');
+      try {
+        await addDoc(collection(db, 'newsletters'), {
+          email: email,
+          date: new Date().toISOString()
+        });
+        output('newsletterOutput', '✓ Email added!');
+        document.getElementById('emailInput').value = '';
+      } catch (err) {
+        output('newsletterOutput', '✗ Error: ' + err.message, true);
+      }
+    };
+
+    window.loadNewsletters = async function() {
+      clearOutput('newsletterOutput');
+      output('newsletterOutput', '⏳ Loading...');
+      try {
+        const q = query(collection(db, 'newsletters'), orderBy('date', 'desc'));
+        const snap = await getDocs(q);
+        output('newsletterOutput', '✓ Found ' + snap.size + ' emails:\n');
+        snap.forEach(doc => {
+          const data = doc.data();
+          output('newsletterOutput', '  - ' + data.email);
+        });
+      } catch (err) {
+        output('newsletterOutput', '✗ Error: ' + err.message, true);
+      }
+    };
+
+    window.clearNewsletters = async function() {
+      if (!confirm('Delete all newsletters?')) return;
+      clearOutput('newsletterOutput');
+      output('newsletterOutput', '⏳ Clearing...');
+      try {
+        const q = query(collection(db, 'newsletters'));
+        const snap = await getDocs(q);
+        const batch = writeBatch(db);
+        snap.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+        output('newsletterOutput', '✓ Deleted ' + snap.size + ' emails!');
+      } catch (err) {
+        output('newsletterOutput', '✗ Error: ' + err.message, true);
+      }
+    };
+
+    // Articles
+    window.addArticle = async function() {
+      clearOutput('articleOutput');
+      const title = document.getElementById('titleInput').value;
+      const content = document.getElementById('contentInput').value;
+      if (!title || !content) {
+        output('articleOutput', '✗ Please enter title and content', true);
+        return;
+      }
+      output('articleOutput', '⏳ Adding...');
+      try {
+        await addDoc(collection(db, 'articles'), {
+          title: title,
+          content: content,
+          date: new Date().toISOString()
+        });
+        output('articleOutput', '✓ Article added!');
+        document.getElementById('titleInput').value = '';
+        document.getElementById('contentInput').value = '';
+      } catch (err) {
+        output('articleOutput', '✗ Error: ' + err.message, true);
+      }
+    };
+
+    window.loadArticles = async function() {
+      clearOutput('articleOutput');
+      output('articleOutput', '⏳ Loading...');
+      try {
+        const q = query(collection(db, 'articles'), orderBy('date', 'desc'));
+        const snap = await getDocs(q);
+        output('articleOutput', '✓ Found ' + snap.size + ' articles:\n');
+        snap.forEach(doc => {
+          const data = doc.data();
+          output('articleOutput', '  - ' + data.title + ' (' + doc.id + ')');
+        });
+      } catch (err) {
+        output('articleOutput', '✗ Error: ' + err.message, true);
+      }
+    };
+
+    window.clearArticles = async function() {
+      if (!confirm('Delete all articles?')) return;
+      clearOutput('articleOutput');
+      output('articleOutput', '⏳ Clearing...');
+      try {
+        const q = query(collection(db, 'articles'));
+        const snap = await getDocs(q);
+        const batch = writeBatch(db);
+        snap.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+        output('articleOutput', '✓ Deleted ' + snap.size + ' articles!');
+      } catch (err) {
+        output('articleOutput', '✗ Error: ' + err.message, true);
+      }
+    };
+
+    // Listings
+    window.addListing = async function() {
+      clearOutput('listingOutput');
+      const title = document.getElementById('listingTitleInput').value;
+      const price = document.getElementById('listingPriceInput').value;
+      const ebay = document.getElementById('listingEbayInput').value;
+      if (!title || !price || !ebay) {
+        output('listingOutput', '✗ Please fill all fields', true);
+        return;
+      }
+      output('listingOutput', '⏳ Adding...');
+      try {
+        await addDoc(collection(db, 'listings'), {
+          title: title,
+          price: parseFloat(price),
+          ebayLink: ebay,
+          description: '',
+          photo: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%231a3a6b" width="100" height="100"/%3E%3C/svg%3E',
+          date: new Date().toISOString()
+        });
+        output('listingOutput', '✓ Listing added!');
+        document.getElementById('listingTitleInput').value = '';
+        document.getElementById('listingPriceInput').value = '';
+        document.getElementById('listingEbayInput').value = '';
+      } catch (err) {
+        output('listingOutput', '✗ Error: ' + err.message, true);
+      }
+    };
+
+    window.loadListings = async function() {
+      clearOutput('listingOutput');
+      output('listingOutput', '⏳ Loading...');
+      try {
+        const q = query(collection(db, 'listings'), orderBy('date', 'desc'));
+        const snap = await getDocs(q);
+        output('listingOutput', '✓ Found ' + snap.size + ' listings:\n');
+        snap.forEach(doc => {
+          const data = doc.data();
+          output('listingOutput', '  - ' + data.title + ' ($' + data.price + ')');
+        });
+      } catch (err) {
+        output('listingOutput', '✗ Error: ' + err.message, true);
+      }
+    };
+
+    window.clearListings = async function() {
+      if (!confirm('Delete all listings?')) return;
+      clearOutput('listingOutput');
+      output('listingOutput', '⏳ Clearing...');
+      try {
+        const q = query(collection(db, 'listings'));
+        const snap = await getDocs(q);
+        const batch = writeBatch(db);
+        snap.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+        output('listingOutput', '✓ Deleted ' + snap.size + ' listings!');
+      } catch (err) {
+        output('listingOutput', '✗ Error: ' + err.message, true);
+      }
+    };
+  </script>
+</body>
+</html>
