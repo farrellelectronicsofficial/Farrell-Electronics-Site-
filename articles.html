@@ -87,6 +87,9 @@
           <label for="articleTitle">Article Title</label>
           <input type="text" id="articleTitle" placeholder="Enter article title" />
 
+          <label for="profileName">Profile Name</label>
+          <input type="text" id="profileName" placeholder="Your name or profile" />
+
           <label for="articleContent">Article Content</label>
           <textarea id="articleContent" placeholder="Write your article here..."></textarea>
 
@@ -151,6 +154,7 @@
       const adminPanel = document.getElementById('adminPanel');
       const loginModal = document.getElementById('loginModal');
       const articleTitle = document.getElementById('articleTitle');
+      const profileName = document.getElementById('profileName');
       const articleContent = document.getElementById('articleContent');
       const publishBtn = document.getElementById('publishBtn');
       const clearFormBtn = document.getElementById('clearFormBtn');
@@ -244,9 +248,14 @@
         publishBtn.addEventListener('click', () => {
           const title = articleTitle.value.trim();
           const content = articleContent.value.trim();
+          const profile = profileName.value.trim();
 
           if (!title) {
             alert('Please enter a title');
+            return;
+          }
+          if (!profile) {
+            alert('Please enter a profile name');
             return;
           }
           if (!content) {
@@ -257,6 +266,7 @@
           addDoc(collection(db, 'articles'), {
             title,
             content,
+            profile,
             date: new Date().toISOString()
           }).then(() => {
             console.log('Article published successfully');
@@ -267,6 +277,7 @@
             }, 3000);
 
             articleTitle.value = '';
+            profileName.value = '';
             articleContent.value = '';
             renderArticles();
           }).catch((err) => {
@@ -279,6 +290,7 @@
       if (clearFormBtn) {
         clearFormBtn.addEventListener('click', () => {
           articleTitle.value = '';
+          profileName.value = '';
           articleContent.value = '';
         });
       }
@@ -304,8 +316,7 @@
                   <div>
                     <h3 class="article-title">${escapeHtml(article.title)}</h3>
                     <div class="article-meta">
-                      ${formatDate(article.date)}
-                      <span class="admin-badge">ADMIN</span>
+                      by <strong>${escapeHtml(article.profile || 'Admin')}</strong> • ${formatDate(article.date)}
                     </div>
                   </div>
                   ${isLoggedIn ? `
