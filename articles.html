@@ -315,6 +315,9 @@
                 <div class="article-content">${escapeHtml(article.content).replace(/\n/g, '<br>')}</div>
               </div>
             `).join('');
+        }, (err) => {
+          console.log('Articles collection not yet created or permission issue:', err.message);
+          articlesContainer.innerHTML = '<div class="no-articles"><p>No articles yet.</p></div>';
         });
       }
 

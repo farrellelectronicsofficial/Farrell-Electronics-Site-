@@ -339,6 +339,9 @@
             announcementText.textContent = 'Welcome to Farrell Electronics';
             announcementInput.value = 'Welcome to Farrell Electronics';
           }
+        }, (err) => {
+          console.log('Announcement not yet created or permission issue:', err.message);
+          announcementText.textContent = 'Welcome to Farrell Electronics';
         });
       }
 
@@ -437,6 +440,10 @@
                 <div class="subscriber-date">Signed up: ${formatDate(sub.date)}</div>
               </div>
             `).join('');
+        }, (err) => {
+          console.log('Newsletter collection not yet created or permission issue:', err.message);
+          subscriberCount.textContent = 0;
+          subscribersList.innerHTML = '<div style="padding:12px;text-align:center;color:#4a5568">No subscribers yet</div>';
         });
       }
 

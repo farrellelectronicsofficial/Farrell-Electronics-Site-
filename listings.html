@@ -381,6 +381,9 @@
                 </div>
               </div>
             `).join('') + '</div>';
+        }, (err) => {
+          console.log('Listings collection not yet created or permission issue:', err.message);
+          listingsContainer.innerHTML = '<div class="no-listings"><p>No listings available at this time.</p></div>';
         });
       }
 
